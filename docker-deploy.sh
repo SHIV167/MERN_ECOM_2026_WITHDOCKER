@@ -5,7 +5,7 @@
 
 set -e
 
-DOCKER_USERNAME="yourusername"
+DOCKER_USERNAME="shivjha5"
 IMAGE_NAME="ecommerce-pro"
 VERSION="v1.0.0"
 

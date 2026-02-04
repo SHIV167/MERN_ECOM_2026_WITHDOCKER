@@ -8,6 +8,7 @@ import storeRoutes from './routes/storeRoutes';
 import promoMessageRoutes from './routes/promomessageRoutes';
 import { setupVite, serveStatic, log } from "./vite";
 import { connectToDatabase, closeDatabaseConnection } from "./db";
+import { connectToRedis, closeRedisConnection } from "./redis";
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import jwt from 'jsonwebtoken';
@@ -130,6 +131,7 @@ app.use((req, res, next) => {
 
 (async () => {
   let dbConnected = false;
+  let redisConnected = false;
   
   // Connect to MongoDB but continue even if it fails
   try {
@@ -143,6 +145,20 @@ app.use((req, res, next) => {
   } catch (error) {
     log(`MongoDB connection error: ${error}`, 'mongodb');
     // Continue even without MongoDB
+  }
+
+  // Connect to Redis but continue even if it fails
+  try {
+    const redisClient = await connectToRedis();
+    if (redisClient) {
+      log('Redis connected successfully', 'redis');
+      redisConnected = true;
+    } else {
+      log('Redis connection failed but continuing with limited functionality', 'redis');
+    }
+  } catch (error) {
+    log(`Redis connection error: ${error}`, 'redis');
+    // Continue even without Redis
   }
   // Initialize demo data regardless of database connection
   try {
@@ -158,7 +174,8 @@ app.use((req, res, next) => {
     res.status(200).json({ 
       status: 'ok', 
       time: new Date().toISOString(),
-      database: dbConnected ? 'connected' : 'disconnected'
+      database: dbConnected ? 'connected' : 'disconnected',
+      redis: redisConnected ? 'connected' : 'disconnected'
     });
   });
 
@@ -252,11 +269,13 @@ app.use((req, res, next) => {
 // Graceful shutdown handlers
 process.on('SIGINT', async () => {
   await closeDatabaseConnection();
+  await closeRedisConnection();
   process.exit(0);
 });
 
 process.on('SIGTERM', async () => {
   await closeDatabaseConnection();
+  await closeRedisConnection();
   process.exit(0);
 });
 

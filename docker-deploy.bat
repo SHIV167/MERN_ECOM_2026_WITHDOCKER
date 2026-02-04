@@ -2,7 +2,7 @@
 REM Docker Build and Push Script for Ecommerce Pro (Windows)
 REM Replace 'yourusername' with your actual Docker Hub username
 
-set DOCKER_USERNAME=yourusername
+set DOCKER_USERNAME=shivjha5
 set IMAGE_NAME=ecommerce-pro
 set VERSION=v1.0.0
 
