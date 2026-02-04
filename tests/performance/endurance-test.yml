@@ -1,0 +1,102 @@
+config:
+  target: 'http://localhost:5000'
+  phases:
+    - duration: 300
+      arrivalRate: 20
+      name: "Endurance test - 5 minutes"
+    - duration: 600
+      arrivalRate: 30
+      name: "Extended load - 10 minutes"
+    - duration: 900
+      arrivalRate: 40
+      name: "Sustained load - 15 minutes"
+  processor: "./test-processor.js"
+  http:
+    timeout: 10
+    pool: 50
+  plugins:
+    metrics-by-endpoint:
+      useOnlyRequestNames: true
+
+scenarios:
+  - name: "Endurance - User Flow"
+    weight: 30
+    flow:
+      - get:
+          url: "/api/health"
+          expect:
+            - statusCode: 200
+      
+      - think: 5
+      
+      - get:
+          url: "/api/products"
+          expect:
+            - statusCode: 200
+      
+      - think: 3
+      
+      - loop:
+          - get:
+              url: "/api/products/{{ $randomInt(1, 20) }}"
+              expect:
+                - statusCode: 200
+          count: 5
+      
+      - think: 2
+
+  - name: "Endurance - Search Operations"
+    weight: 25
+    flow:
+      - get:
+          url: "/api/products?search=laptop"
+          expect:
+            - statusCode: 200
+      
+      - think: 4
+      
+      - get:
+          url: "/api/products?category=electronics"
+          expect:
+            - statusCode: 200
+      
+      - think: 3
+      
+      - get:
+          url: "/api/products?minPrice=100&maxPrice=500"
+          expect:
+            - statusCode: 200
+      
+      - think: 4
+
+  - name: "Endurance - Categories"
+    weight: 25
+    flow:
+      - get:
+          url: "/api/categories"
+          expect:
+            - statusCode: 200
+      
+      - think: 5
+      
+      - loop:
+          - get:
+              url: "/api/categories/{{ $randomInt(1, 5) }}"
+              expect:
+                - statusCode: 200
+          count: 3
+      
+      - think: 3
+
+  - name: "Endurance - Health Checks"
+    weight: 20
+    flow:
+      - loop:
+          - get:
+              url: "/api/health"
+              expect:
+                - statusCode: 200
+                - hasProperty: "status"
+          count: 10
+      
+      - think: 2

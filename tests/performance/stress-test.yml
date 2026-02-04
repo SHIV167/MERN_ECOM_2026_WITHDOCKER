@@ -1,0 +1,124 @@
+config:
+  target: 'http://localhost:5000'
+  phases:
+    - duration: 30
+      arrivalRate: 5
+      name: "Initial warm up"
+    - duration: 60
+      arrivalRate: 20
+      name: "Increasing load"
+    - duration: 120
+      arrivalRate: 50
+      name: "High load"
+    - duration: 60
+      arrivalRate: 100
+      name: "Maximum load"
+    - duration: 30
+      arrivalRate: 150
+      name: "Stress test"
+    - duration: 60
+      arrivalRate: 200
+      name: "Peak stress"
+  processor: "./test-processor.js"
+  http:
+    timeout: 15
+    pool: 100
+  plugins:
+    metrics-by-endpoint:
+      useOnlyRequestNames: true
+
+scenarios:
+  - name: "Authentication Stress Test"
+    weight: 25
+    flow:
+      - post:
+          url: "/api/auth/login"
+          headers:
+            Content-Type: "application/json"
+          json:
+            email: "testuser{{ $randomString(8) }}@example.com"
+            password: "password123"
+          expect:
+            - statusCode: 401  # Expected to fail for random users
+      
+      - think: 0.5
+      
+      - post:
+          url: "/api/auth/register"
+          headers:
+            Content-Type: "application/json"
+          json:
+            email: "newuser{{ $randomString(8) }}@example.com"
+            password: "password123"
+            name: "Stress Test User"
+          capture:
+            - json: "$.user._id"
+              as: "userId"
+          expect:
+            - statusCode: 201
+
+  - name: "Product API Stress Test"
+    weight: 35
+    flow:
+      - get:
+          url: "/api/products"
+          expect:
+            - statusCode: 200
+      
+      - think: 0.3
+      
+      - loop:
+          - get:
+              url: "/api/products/{{ $randomInt(1, 50) }}"
+              expect:
+                - statusCode: 200
+          count: 10
+      
+      - think: 0.5
+      
+      - get:
+          url: "/api/products?search={{ $randomString(5) }}"
+          expect:
+            - statusCode: 200
+
+  - name: "Search and Filter Stress Test"
+    weight: 25
+    flow:
+      - loop:
+          - get:
+              url: "/api/products?category={{ $randomString(8) }}"
+              expect:
+                - statusCode: 200
+          count: 5
+      
+      - think: 0.2
+      
+      - get:
+          url: "/api/products?minPrice={{ $randomInt(10, 100) }}&maxPrice={{ $randomInt(200, 1000) }}"
+          expect:
+            - statusCode: 200
+      
+      - think: 0.3
+      
+      - get:
+          url: "/api/products?limit={{ $randomInt(5, 50) }}&page={{ $randomInt(1, 10) }}"
+          expect:
+            - statusCode: 200
+
+  - name: "Health Check Stress Test"
+    weight: 15
+    flow:
+      - loop:
+          - get:
+              url: "/api/health"
+              expect:
+                - statusCode: 200
+                - hasProperty: "status"
+          count: 20
+      
+      - think: 0.1
+      
+      - get:
+          url: "/api/categories"
+          expect:
+            - statusCode: 200

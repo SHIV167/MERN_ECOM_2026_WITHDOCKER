@@ -1,0 +1,67 @@
+config:
+  target: 'http://localhost:5000'
+  phases:
+    - duration: 60
+      arrivalRate: 10
+      name: "Baseline"
+    - duration: 10
+      arrivalRate: 500
+      name: "Spike"
+    - duration: 60
+      arrivalRate: 10
+      name: "Recovery"
+    - duration: 10
+      arrivalRate: 1000
+      name: "Major spike"
+    - duration: 60
+      arrivalRate: 10
+      name: "Final recovery"
+  processor: "./test-processor.js"
+  http:
+    timeout: 20
+    pool: 200
+  plugins:
+    metrics-by-endpoint:
+      useOnlyRequestNames: true
+
+scenarios:
+  - name: "Spike Test - Health Check"
+    weight: 40
+    flow:
+      - get:
+          url: "/api/health"
+          expect:
+            - statusCode: 200
+            - hasProperty: "status"
+      
+      - think: 0.1
+
+  - name: "Spike Test - Products"
+    weight: 35
+    flow:
+      - get:
+          url: "/api/products"
+          expect:
+            - statusCode: 200
+      
+      - think: 0.2
+      
+      - get:
+          url: "/api/products/{{ $randomInt(1, 20) }}"
+          expect:
+            - statusCode: 200
+
+  - name: "Spike Test - Categories"
+    weight: 25
+    flow:
+      - get:
+          url: "/api/categories"
+          expect:
+            - statusCode: 200
+      
+      - think: 0.1
+      
+      - get:
+          url: "/api/categories/{{ $randomInt(1, 5) }}"
+          expect:
+            - statusCode: 200

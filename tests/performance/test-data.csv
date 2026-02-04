@@ -1,0 +1,11 @@
+email,password,productName,price
+test1@example.com,password123,Laptop,999.99
+test2@example.com,testpass,Phone,699.99
+test3@example.com,demo123,Tablet,399.99
+perfuser@example.com,password123,Monitor,299.99
+loadtest@example.com,testpass,Keyboard,99.99
+user1@example.com,password123,Mouse,49.99
+user2@example.com,testpass,Headphones,199.99
+user3@example.com,demo123,Webcam,89.99
+perf1@example.com,password123,Speaker,149.99
+load1@example.com,testpass,Router,79.99
