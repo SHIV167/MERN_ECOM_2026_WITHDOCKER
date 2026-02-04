@@ -28,7 +28,7 @@
     "test:integration": "jest --config jest.config.cjs tests/integration",
     "test:integration:watch": "jest --config jest.config.cjs tests/integration --watch",
     "test:integration:coverage": "jest --config jest.config.cjs tests/integration --coverage",
-    "test:integration:auth": "jest --config jest.config.cjs tests/integration/auth.test.ts",
+    "test:integration:auth": "jest --config jest.config.cjs tests/integration/auth-simple.test.ts",
     "test:integration:products": "jest --config jest.config.cjs tests/integration/products.test.ts",
     "test:integration:cart": "jest --config jest.config.cjs tests/integration/cart.test.ts",
     "test:integration:orders": "jest --config jest.config.cjs tests/integration/orders.test.ts",
