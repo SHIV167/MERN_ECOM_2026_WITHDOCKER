@@ -1,0 +1,35 @@
+
+> rest-express@1.0.0 test:integration:auth
+> jest --config jest.config.cjs tests/integration/auth-simple.test.ts
+
+ts-jest[ts-jest-transformer] (WARN) Define `ts-jest` config under `globals` is deprecated. Please do
+transform: {
+    <transform_regex>: ['ts-jest', { /* ts-jest config goes here in Jest */ }],
+},
+See more at https://kulshekhar.github.io/ts-jest/docs/getting-started/presets#advanced
+  console.log
+    ✅ Server is running
+
+      at Object.<anonymous> (tests/integration/auth-simple.test.ts:17:15)
+
+(node:21464) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS tests/integration/auth-simple.test.ts (15.51 s)
+  Authentication Integration Tests
+    POST /api/auth/register
+      √ should register a new user successfully (319 ms)
+      √ should handle registration with valid data (238 ms)
+    POST /api/auth/login
+      √ should login successfully with valid credentials (356 ms)
+      √ should return error for invalid credentials (294 ms)
+      √ should return error for non-existent user (207 ms)
+    API Health Check
+      √ should return health status (11 ms)
+    Basic API Connectivity
+      √ should handle basic requests (9 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       7 passed, 7 total
+Snapshots:   0 total
+Time:        15.994 s, estimated 16 s
+Ran all test suites matching tests/integration/auth-simple.test.ts.
