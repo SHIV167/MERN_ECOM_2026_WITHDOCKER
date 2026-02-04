@@ -1,8 +1,11 @@
 import request from 'supertest';
 import { describe, it, expect, beforeAll, afterAll, beforeEach, jest } from '@jest/globals';
-import app from '../../server/index.js';
+import express from 'express';
+import { connectToDatabase } from '../../server/db';
+import { registerRoutes } from '../../server/routes';
 
 describe('Orders Integration Tests', () => {
+  let app: express.Application;
   let server: any;
   let authToken: string;
   let userId: string;
@@ -14,8 +17,16 @@ describe('Orders Integration Tests', () => {
   let testCategory: any;
 
   beforeAll(async () => {
-    // Start the server
-    server = app.listen(0);
+    // Create Express app
+    app = express();
+    app.use(express.json());
+    app.use(express.urlencoded({ extended: false }));
+    
+    // Connect to database
+    await connectToDatabase();
+    
+    // Register routes
+    server = await registerRoutes(app);
     
     // Wait for server to be ready
     await new Promise(resolve => setTimeout(resolve, 1000));

@@ -1,27 +1,22 @@
 import request from 'supertest';
 import { describe, it, expect, beforeAll, afterAll, beforeEach, jest } from '@jest/globals';
-import app from '../../server/index.js';
 
 describe('Authentication Integration Tests', () => {
-  let server: any;
   let authToken: string;
   let userId: string;
   let testUser: any;
+  const API_URL = 'http://localhost:5000';
 
   beforeAll(async () => {
-    // Start the server
-    server = app.listen(0);
-    
     // Wait for server to be ready
-    await new Promise(resolve => setTimeout(resolve, 1000));
-  });
-
-  afterAll(async () => {
-    // Close the server
-    if (server) {
-      await new Promise<void>((resolve) => {
-        server.close(resolve);
-      });
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Check if server is running
+    try {
+      await request(API_URL).get('/api/health').expect(200);
+    } catch (error) {
+      console.error('Server is not running. Please start the server with: npm run dev:server');
+      throw error;
     }
   });
 
@@ -36,7 +31,7 @@ describe('Authentication Integration Tests', () => {
 
   describe('POST /api/auth/register', () => {
     it('should register a new user successfully', async () => {
-      const response = await request(server)
+      const response = await request(API_URL)
         .post('/api/auth/register')
         .send(testUser)
         .expect(201);
@@ -137,7 +132,7 @@ describe('Authentication Integration Tests', () => {
       expect(response.body.user).toHaveProperty('_id', userId);
       expect(response.body.user).toHaveProperty('email', testUser.email);
       expect(response.body).toHaveProperty('token');
-      expect(response.body.token).toBeTypeOf('string');
+      expect(typeof response.body.token).toBe('string');
       expect(response.body.token.length).toBeGreaterThan(0);
     });
 

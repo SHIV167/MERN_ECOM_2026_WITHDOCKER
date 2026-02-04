@@ -9,6 +9,16 @@ module.exports = {
   transform: {
     '^.+\\.ts$': 'ts-jest'
   },
+  extensionsToTreatAsEsm: ['.ts'],
+  globals: {
+    'ts-jest': {
+      useESM: true,
+      tsconfig: {
+        module: 'ESNext',
+        target: 'ES2020'
+      }
+    }
+  },
   setupFilesAfterEnv: ['<rootDir>/tests/setup.d.ts'],
   collectCoverageFrom: [
     'server/**/*.ts',
@@ -20,5 +30,7 @@ module.exports = {
   coverageReporters: ['text', 'lcov', 'html'],
   testTimeout: 30000,
   moduleFileExtensions: ['ts', 'js', 'json'],
-  testPathIgnorePatterns: ['/node_modules/', '/dist/']
+  testPathIgnorePatterns: ['/node_modules/', '/dist/'],
+  detectOpenHandles: true,
+  forceExit: true
 };
