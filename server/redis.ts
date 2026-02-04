@@ -10,6 +10,13 @@ const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
 // Connect to Redis
 export async function connectToRedis(): Promise<RedisClientType> {
   try {
+    // In development, check if Redis is available first
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Redis connection skipped in development mode (Redis not running locally)');
+      console.log('To enable Redis, run: docker-compose up -d redis');
+      return null;
+    }
+    
     console.log('Attempting to connect to Redis at:', REDIS_URL);
     
     redisClient = createClient({
@@ -18,7 +25,7 @@ export async function connectToRedis(): Promise<RedisClientType> {
         connectTimeout: 5000,
         lazyConnect: true,
       },
-      // Retry strategy
+      // Retry strategy for production only
       retry_strategy: (options) => {
         if (options.error && options.error.code === 'ECONNREFUSED') {
           console.error('Redis server connection refused');
@@ -27,11 +34,11 @@ export async function connectToRedis(): Promise<RedisClientType> {
         if (options.total_retry_time > 1000 * 60 * 60) {
           return new Error('Retry time exhausted');
         }
-        if (options.attempt > 10) {
+        if (options.attempt > 3) {
           return undefined;
         }
-        // Retry after 3 seconds
-        return Math.min(options.attempt * 100, 3000);
+        // Retry after 5 seconds
+        return Math.min(options.attempt * 1000, 5000);
       }
     });
 
@@ -59,6 +66,7 @@ export async function connectToRedis(): Promise<RedisClientType> {
     console.log('Redis connected successfully');
     
     return redisClient;
+    
   } catch (error) {
     console.error('Redis connection error:', error);
     // Return null to allow application to continue without Redis
@@ -96,10 +104,17 @@ export class RedisCache {
     this.client = getRedisClient();
   }
 
+  // Check if Redis is available
+  private isRedisAvailable(): boolean {
+    return this.client !== null && this.client.isOpen;
+  }
+
   // Set cache with TTL (time to live in seconds)
   async set(key: string, value: any, ttl: number = 3600): Promise<boolean> {
     try {
-      if (!this.client) return false;
+      if (!this.isRedisAvailable()) {
+        return false;
+      }
       
       const serializedValue = JSON.stringify(value);
       if (ttl > 0) {
@@ -109,7 +124,7 @@ export class RedisCache {
       }
       return true;
     } catch (error) {
-      console.error('Redis SET error:', error);
+      // Silent failure - don't spam logs
       return false;
     }
   }
@@ -117,14 +132,16 @@ export class RedisCache {
   // Get cache value
   async get<T>(key: string): Promise<T | null> {
     try {
-      if (!this.client) return null;
+      if (!this.isRedisAvailable()) {
+        return null;
+      }
       
       const value = await this.client.get(key);
       if (!value) return null;
       
       return JSON.parse(value) as T;
     } catch (error) {
-      console.error('Redis GET error:', error);
+      // Silent failure
       return null;
     }
   }
@@ -132,12 +149,14 @@ export class RedisCache {
   // Delete cache key
   async del(key: string): Promise<boolean> {
     try {
-      if (!this.client) return false;
+      if (!this.isRedisAvailable()) {
+        return false;
+      }
       
       await this.client.del(key);
       return true;
     } catch (error) {
-      console.error('Redis DEL error:', error);
+      // Silent failure
       return false;
     }
   }
@@ -145,12 +164,14 @@ export class RedisCache {
   // Check if key exists
   async exists(key: string): Promise<boolean> {
     try {
-      if (!this.client) return false;
+      if (!this.isRedisAvailable()) {
+        return false;
+      }
       
       const result = await this.client.exists(key);
       return result === 1;
     } catch (error) {
-      console.error('Redis EXISTS error:', error);
+      // Silent failure
       return false;
     }
   }
@@ -158,12 +179,14 @@ export class RedisCache {
   // Set TTL for existing key
   async expire(key: string, ttl: number): Promise<boolean> {
     try {
-      if (!this.client) return false;
+      if (!this.isRedisAvailable()) {
+        return false;
+      }
       
       await this.client.expire(key, ttl);
       return true;
     } catch (error) {
-      console.error('Redis EXPIRE error:', error);
+      // Silent failure
       return false;
     }
   }
@@ -171,11 +194,13 @@ export class RedisCache {
   // Get TTL for key
   async ttl(key: string): Promise<number> {
     try {
-      if (!this.client) return -1;
+      if (!this.isRedisAvailable()) {
+        return -1;
+      }
       
       return await this.client.ttl(key);
     } catch (error) {
-      console.error('Redis TTL error:', error);
+      // Silent failure
       return -1;
     }
   }
@@ -183,11 +208,13 @@ export class RedisCache {
   // Increment counter
   async incr(key: string): Promise<number | null> {
     try {
-      if (!this.client) return null;
+      if (!this.isRedisAvailable()) {
+        return null;
+      }
       
       return await this.client.incr(key);
     } catch (error) {
-      console.error('Redis INCR error:', error);
+      // Silent failure
       return null;
     }
   }
@@ -195,11 +222,13 @@ export class RedisCache {
   // Increment counter by value
   async incrBy(key: string, value: number): Promise<number | null> {
     try {
-      if (!this.client) return null;
+      if (!this.isRedisAvailable()) {
+        return null;
+      }
       
       return await this.client.incrBy(key, value);
     } catch (error) {
-      console.error('Redis INCRBY error:', error);
+      // Silent failure
       return null;
     }
   }
@@ -207,11 +236,13 @@ export class RedisCache {
   // Get all keys matching pattern
   async keys(pattern: string): Promise<string[]> {
     try {
-      if (!this.client) return [];
+      if (!this.isRedisAvailable()) {
+        return [];
+      }
       
       return await this.client.keys(pattern);
     } catch (error) {
-      console.error('Redis KEYS error:', error);
+      // Silent failure
       return [];
     }
   }
@@ -219,12 +250,14 @@ export class RedisCache {
   // Clear all cache (use with caution)
   async flushAll(): Promise<boolean> {
     try {
-      if (!this.client) return false;
+      if (!this.isRedisAvailable()) {
+        return false;
+      }
       
       await this.client.flushAll();
       return true;
     } catch (error) {
-      console.error('Redis FLUSHALL error:', error);
+      // Silent failure
       return false;
     }
   }
@@ -266,9 +299,12 @@ export class RateLimiter {
         resetTime
       };
     } catch (error) {
-      console.error('Rate limiter error:', error);
       // Allow request if Redis fails
-      return { exceeded: false, remaining: limit, resetTime: Date.now() + (window * 1000) };
+      return { 
+        exceeded: false, 
+        remaining: limit, 
+        resetTime: Date.now() + (window * 1000) 
+      };
     }
   }
 }
