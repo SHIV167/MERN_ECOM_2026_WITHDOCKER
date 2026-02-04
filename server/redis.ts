@@ -68,7 +68,12 @@ export async function connectToRedis(): Promise<RedisClientType> {
 
 // Get Redis client instance
 export function getRedisClient(): RedisClientType | null {
-  return redisClient || null;
+  try {
+    return redisClient || null;
+  } catch (error) {
+    console.error('Error getting Redis client:', error);
+    return null;
+  }
 }
 
 // Close Redis connection
